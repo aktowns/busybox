@@ -66,14 +66,14 @@ config SHA1_SMALL
 
 config SHA1_HWACCEL
 	bool "SHA1: Use hardware accelerated instructions if possible"
-	default y
+	default n
 	help
 	On x86, this adds ~590 bytes of code. Throughput
 	is about twice as fast as fully-unrolled generic code.
 
 config SHA256_HWACCEL
 	bool "SHA256: Use hardware accelerated instructions if possible"
-	default y
+	default n
 	help
 	On x86, this adds ~1k bytes of code.
 
