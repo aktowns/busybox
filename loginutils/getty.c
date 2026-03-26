@@ -654,11 +654,11 @@ int getty_main(int argc UNUSED_PARAM, char **argv)
 			bb_simple_perror_msg_and_die("TIOCSCTTY");
 	}
 
-#ifdef __linux__
-	/* Make ourself a foreground process group within our session */
+	/* Make ourself a foreground process group within our session.
+	 * wOS: removed #ifdef __linux__ guard — tcsetpgrp is a real
+	 * kernel call on wOS and is required for TTY input routing. */
 	if (tcsetpgrp(STDIN_FILENO, pid) < 0)
 		bb_simple_perror_msg_and_die("tcsetpgrp");
-#endif
 
 	/*
 	 * The following ioctl will fail if stdin is not a tty, but also when

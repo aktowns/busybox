@@ -480,11 +480,14 @@ static pid_t run(const struct init_action *a)
 {
 	pid_t pid;
 
+	/* Careful: don't be affected by a signal in vforked child */
+	sigprocmask_allsigs(SIG_BLOCK);
 	if (BB_MMU && (a->action_type & ASKFIRST))
 		pid = fork();
 	else
 		pid = vfork();
 	if (pid) {
+		sigprocmask_allsigs(SIG_UNBLOCK);
 		if (pid < 0)
 			message(L_LOG | L_CONSOLE, "can't fork");
 		return pid; /* Parent or error */
@@ -733,24 +736,13 @@ static void parse_inittab(void)
 static void pause_and_low_level_reboot(unsigned magic) NORETURN;
 static void pause_and_low_level_reboot(unsigned magic)
 {
-	pid_t pid;
-
 	/* Allow time for last message to reach serial console, etc */
 	sleep1();
 
-	/* We have to fork here, since the kernel calls do_exit(EXIT_SUCCESS)
-	 * in linux/kernel/sys.c, which can cause the machine to panic when
-	 * the init process exits... */
-	pid = vfork();
-	if (pid == 0) { /* child */
+	/* wOS: No fork needed — just call reboot directly.
+	 * On Linux, init forks because reboot() causes do_exit() which
+	 * would kill PID 1. On wOS, reboot() is a simple syscall. */
 		reboot(magic);
-		_exit_SUCCESS();
-	}
-	/* Used to have "while (1) sleep(1)" here.
-	 * However, in containers reboot() call is ignored, and with that loop
-	 * we would eternally sleep here - not what we want.
-	 */
-	waitpid(pid, NULL, 0);
 	sleep1(); /* paranoia */
 	_exit_SUCCESS();
 }
@@ -936,14 +928,11 @@ static void reload_inittab(void)
 		if (a->action_type == 0 && a->pid != 0)
 			kill(a->pid, SIGTERM);
 	if (CONFIG_FEATURE_KILL_DELAY) {
-		/* NB: parent will wait in NOMMU case */
-		if ((BB_MMU ? fork() : vfork()) == 0) { /* child */
+		/* wOS: Can't fork, do the delayed kill synchronously */
 			sleep(CONFIG_FEATURE_KILL_DELAY);
 			for (a = G.init_action_list; a; a = a->next)
 				if (a->action_type == 0 && a->pid != 0)
 					kill(a->pid, SIGKILL);
-			_exit_SUCCESS();
-		}
 	}
 #endif
 

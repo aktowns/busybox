@@ -95,8 +95,17 @@ fi
 
 START_GROUP="-Wl,--start-group"
 END_GROUP="-Wl,--end-group"
+if ! check_cc "-Wl,--start-group -Wl,--end-group"; then
+    echo "Your linker does not support --start-group/--end-group"
+    START_GROUP=""
+    END_GROUP=""
+fi
 INFO_OPTS() {
-	echo "-Wl,--warn-common -Wl,-Map,$EXE.map -Wl,--verbose"
+	local opts=""
+	check_cc "-Wl,--warn-common" && opts="$opts -Wl,--warn-common"
+	check_cc "-Wl,-Map,$EXE.map" && opts="$opts -Wl,-Map,$EXE.map"
+	check_cc "-Wl,--verbose" && opts="$opts -Wl,--verbose"
+	echo "$opts"
 }
 
 # gold may not support --sort-common (yet)

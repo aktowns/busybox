@@ -10595,23 +10595,14 @@ evalcommand(union node *cmd, int flags)
 			break;
 		}
 #endif
-		/* Can we avoid forking? For example, very last command
-		 * in a script or a subshell does not need forking,
-		 * we can just exec it.
-		 */
-		if (!(flags & EV_EXIT) || may_have_traps) {
-			/* No, forking off a child is necessary */
+		/* Fork off a child process if necessary. */
 			INT_OFF;
-			get_tty_state();
 			jp = makejob(/*cmd,*/ 1);
 			if (forkshell(jp, cmd, FORK_FG) != 0) {
 				/* parent */
 				break;
 			}
 			/* child */
-			FORCE_INT_ON;
-			/* fall through to exec'ing external program */
-		}
 		shellexec(argv[0], argv, path, cmdentry.u.index);
 		/* NOTREACHED */
 	} /* default */
